@@ -1,1 +1,104 @@
+from typing import List
+class Category:
+  def __init__(self, name):
+    self.name = name
+    self.ledger = [] #class attribute.
+  def deposit(self, amount, desc=''):
+    to_app_d = {'amount': amount, 'description': desc}
+    self.ledger.append(to_app_d)
+    return self.ledger
+  def withdraw(self, w_amount, w_desc=''):
+# checking the available funds in the ledger.
+    if self.check_funds(w_amount):
+      to_app_w = {'amount': -w_amount, 'description': w_desc}
+      self.ledger.append(to_app_w) # adding a withdrawal.
+      return True
+    else:
+      return False
+  def get_balance(self):
+#this function gets the available funds in the ledger.
+    if len(self.ledger) > 1:
+      balance = []
+      for i in range(len(self.ledger)):
+        amnt = self.ledger[i]['amount']
+        balance.append(amnt)
+      balance = sum(balance)
+    elif len(self.ledger) == 1:
+      balance = self.ledger[0]['amount']
+    else:
+      balance = 0
+    return balance
+  def transfer(self, t_amount, category):
+# checking the available funds in the ledger.
+    if self.check_funds(t_amount):
+      self.withdraw(t_amount,'Transfer to ' + category.name)
+      category.deposit(t_amount, 'Transfer from ' + self.name)
+      return True
+    else:
+      return False
+  def check_funds(self, a):
+    if a > self.get_balance():
+      return False
+    else:
+      return True
+  def __str__(self):
+    output = self.name.center(30, '*')+"\n"
+    for transaction in self.ledger:
+      amount = 0
+      description = ""
+      for k,v in transaction.items():
+        if k == "amount":
+            amount = v
+        elif k == "description":
+            description = v
+      if len(description) > 23:
+        description = description[:23]
+      amount = str(format(float(amount),'.2f'))
+      if len(amount) > 7:
+        amount= amount[:7] 
+      output += description + str(amount).rjust(30-len(description))+"\n"
+    output += 'Total: ' + str(format(float(self.get_balance()), '.2f'))
+    return output
 
+def create_spend_chart(categories: List[Category]) -> str:
+  category_data = {}
+  withdrawal_total: int = 0
+# looping through category to find percentages
+  for category in categories:
+    name: str = category.name
+    withdraw_amount: int = 0
+    for item in category.ledger:
+      if item['amount'] < 0:
+        withdraw_amount += -item['amount']
+        withdrawal_total += -item['amount']
+    category_data[name]: str = withdraw_amount    
+# The heading and maximum word length is initialized.
+  res = 'Percentage spent by category\n'
+  max_item_len = 0
+# loop from 100 to 0 with a step of -10 to find the percentage for each category and plot it on the graph.
+  for i in range(100, -10, -10):
+    line = f'{i}| '.rjust(5, ' ')
+    for key, withdraw in category_data.items():
+      percentage = withdraw / withdrawal_total * 100
+      if len(key) > max_item_len:
+        max_item_len = len(key)
+      if percentage  >= i:
+        line += 'o'.ljust(3, ' ')
+      else:
+        line += '   '        
+    res += line + '\n'    
+# Add a dashed line to separate the data points and naming on the graph.
+  dashed_line = '    '.ljust(len(categories) * 3 + 5, '-')
+  res += dashed_line + '\n'
+# loop through the names and input the characters in vertical order.
+  for i in range(0, max_item_len):
+    res += ''.ljust(5, ' ')
+    for item in category_data.keys():
+      if len(item) > i:
+        res += item[i].ljust(3, ' ')
+      else:
+        res += ''.ljust(3, ' ')
+# add new line if not on the last row
+    if i != max_item_len - 1:
+      res += '\n'
+  return res
